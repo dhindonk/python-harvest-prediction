@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Prediksi - Sistem Prediksi Hasil Panen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="{{ url_for('static', filename='js/pdf-generator.js') }}"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
+      body {
+        font-family: 'Quicksand', sans-serif;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#328E6E',
+              dark: '#333',
+              light: '#efefef'
+            },
+            fontFamily: {
+              'quicksand': ['Quicksand', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-light text-dark font-quicksand min-h-screen">
+    <div class="container mx-auto px-4 py-12">
+        <div class="max-w-6xl mx-auto">
+            <div >
+                <!-- File Information -->
+                <div class="bg-green-50 rounded-2xl p-6 mb-8 border border-green-200">
+                    <h6 class="text-lg font-semibold text-primary mb-4 flex items-center">
+                        <i class="fas fa-file-csv mr-3"></i> Informasi File
+                    </h6>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <div>
+                            <span class="text-gray-600">Nama File:</span>
+                            <span class="font-medium text-dark ml-2">{{ results.filename }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Total Data:</span>
+                            <span class="font-medium text-dark ml-2">{{ results.total_records }} record</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Data Diproses:</span>
+                            <span class="font-medium text-dark ml-2">{{ results.processed_records }} record</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Metrics Cards -->
+                <div class="grid md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-light border border-primary text-primary rounded-3xl p-6 text-center">
+                        <h5 class="text-sm font-medium mb-3 opacity-90">
+                            <i class="fas fa-chart-bar mr-2"></i> RMSE
+                        </h5>
+                        <div class="text-3xl font-bold">{{ "%.2f"|format(results.metrics.RMSE) }}</div>
+                        <div class="text-sm opacity-80 mt-1">kg</div>
+                    </div>
+                    <div class="bg-light border border-primary text-primary rounded-3xl p-6 text-center">
+                        <h5 class="text-sm font-medium mb-3 opacity-90">
+                            <i class="fas fa-exclamation-triangle mr-2"></i> MAE
+                        </h5>
+                        <div class="text-3xl font-bold">{{ "%.2f"|format(results.metrics.MAE) }}</div>
+                        <div class="text-sm opacity-80 mt-1">kg</div>
+                    </div>
+                    <div class="bg-light border border-primary text-primary rounded-3xl p-6 text-center">
+                        <h5 class="text-sm font-medium mb-3 opacity-90">
+                            <i class="fas fa-percentage mr-2"></i> MAPE
+                        </h5>
+                        <div class="text-3xl font-bold">{{ "%.2f"|format(results.metrics.MAPE) }}</div>
+                        <div class="text-sm opacity-80 mt-1">%</div>
+                    </div>
+                    <div class="bg-light border border-primary text-primary rounded-3xl p-6 text-center">
+                        <h5 class="text-sm font-medium mb-3 opacity-90">
+                            <i class="fas fa-bullseye mr-2"></i> R²
+                        </h5>
+                        <div class="text-3xl font-bold">{{ "%.4f"|format(results.metrics['R²']) }}</div>
+                        <div class="text-sm opacity-80 mt-1">akurasi</div>
+                    </div>
+                </div>
+                
+                <!-- Accuracy Badge -->
+                <div class="text-center mb-8">
+                    {% if results.metrics.MAPE < 10 %}
+                        <div class="inline-flex items-center px-6 py-3 rounded-full bg-green-100 text-green-800 font-medium">
+                            <i class="fas fa-star mr-2"></i> Akurasi Sangat Baik (MAPE < 10%)
+                        </div>
+                    {% elif results.metrics.MAPE < 20 %}
+                        <div class="inline-flex items-center px-6 py-3 rounded-full bg-blue-100 text-blue-800 font-medium">
+                            <i class="fas fa-thumbs-up mr-2"></i> Akurasi Baik (MAPE < 20%)
+                        </div>
+                    {% elif results.metrics.MAPE < 30 %}
+                        <div class="inline-flex items-center px-6 py-3 rounded-full bg-yellow-100 text-yellow-800 font-medium">
+                            <i class="fas fa-exclamation-circle mr-2"></i> Akurasi Cukup (MAPE < 30%)
+                        </div>
+                    {% else %}
+                        <div class="inline-flex items-center px-6 py-3 rounded-full bg-red-100 text-red-800 font-medium">
+                            <i class="fas fa-times-circle mr-2"></i> Akurasi Kurang (MAPE > 30%)
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Chart -->
+                <div class="bg-light rounded-3xl border border-gray-200 p-6 mb-8">
+                    <canvas id="predictionChart" style="height: 400px;"></canvas>
+                </div>
+                
+                <!-- Hidden data for PDF generation -->
+                <div id="pdfData" style="display: none;"
+                     data-filename="{{ results.filename }}"
+                     data-total-records="{{ results.total_records }}"
+                     data-processed-records="{{ results.processed_records }}"
+                     data-rmse="{{ results.metrics.RMSE }}"
+                     data-mae="{{ results.metrics.MAE }}"
+                     data-mape="{{ results.metrics.MAPE }}"
+                     data-r2="{{ results.metrics['R²'] }}"
+                     data-chart-data="{{ results.chart_data|tojson|safe }}">
+                </div>
+                
+                <!-- Prediction Table -->
+                <div class="bg-light rounded-3xl border border-gray-200 overflow-hidden mb-8">
+                    <div class="bg-green-50 px-6 py-4 border-b border-gray-200">
+                        <h5 class="text-lg font-semibold text-primary flex items-center">
+                            <i class="fas fa-table mr-3"></i> Detail Prediksi ({{ results.test_samples }} Sample Uji)
+                        </h5>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-primary text-light">
+                                <tr>
+                                    <th class="px-6 py-4 text-left font-medium">Tanggal</th>
+                                    <th class="px-6 py-4 text-left font-medium">Aktual (kg)</th>
+                                    <th class="px-6 py-4 text-left font-medium">Prediksi (kg)</th>
+                                    <th class="px-6 py-4 text-left font-medium">Error (kg)</th>
+                                    <th class="px-6 py-4 text-left font-medium">Error (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {% for data in results.chart_data[:10] %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4">{{ data.date }}</td>
+                                    <td class="px-6 py-4">{{ "%.1f"|format(data.actual) }}</td>
+                                    <td class="px-6 py-4">{{ "%.1f"|format(data.predicted) }}</td>
+                                    <td class="px-6 py-4 font-medium {{ 'text-green-600' if data.predicted <= data.actual else 'text-blue-600' }}">
+                                        {{ "%.1f"|format((data.actual - data.predicted)) }}
+                                    </td>
+                                    <td class="px-6 py-4 font-medium {{ 'text-green-600' if data.predicted <= data.actual else 'text-blue-600' }}">
+                                        {{ "%.1f"|format(((data.actual - data.predicted) / data.actual * 100)) }}%
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if results.chart_data|length > 10 %}
+                    <div class="text-center p-4 bg-gray-50">
+                        <span class="text-sm text-gray-500">Menampilkan 10 dari {{ results.chart_data|length }} prediksi</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="text-center">
+                    <a href="/" class="inline-flex items-center bg-light text-primary border-2 border-primary px-8 py-3 rounded-full font-semibold hover:bg-primary hover:text-light transition-all duration-200 mr-4">
+                        <i class="fas fa-arrow-left mr-2"></i> Upload File Baru
+                    </a>
+                    <button onclick="downloadResults()" class="inline-flex items-center bg-primary text-light px-8 py-3 rounded-full font-semibold hover:bg-opacity-90 transition-all duration-200">
+                        <i class="fas fa-download mr-2"></i> Download Hasil
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart data
+        var chartData = JSON.parse('{{ results.chart_data|tojson|safe }}');
+        var dates = chartData.map(d => d.date);
+        var actualValues = chartData.map(d => d.actual);
+        var predictedValues = chartData.map(d => d.predicted);
+        
+        // Create chart
+        const ctx = document.getElementById('predictionChart').getContext('2d');
+        const predictionChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Aktual',
+                    data: actualValues,
+                    borderColor: '#328E6E',
+                    backgroundColor: 'rgba(50, 142, 110, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#328E6E',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }, {
+                    label: 'Prediksi',
+                    data: predictedValues,
+                    borderColor: '#67AE6E',
+                    backgroundColor: 'rgba(103, 174, 110, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#67AE6E',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Perbandingan Aktual vs Prediksi Hasil Panen',
+                        font: {
+                            size: 18,
+                            weight: '600',
+                            family: 'Quicksand'
+                        },
+                        color: '#328E6E',
+                        padding: 20
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                family: 'Quicksand',
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        titleColor: '#328E6E',
+                        bodyColor: '#333',
+                        borderColor: '#e5e7eb',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: true,
+                        titleFont: {
+                            family: 'Quicksand',
+                            weight: '600'
+                        },
+                        bodyFont: {
+                            family: 'Quicksand'
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += context.parsed.y.toFixed(1) + ' kg';
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Hasil Panen (kg)',
+                            color: '#6b7280',
+                            font: {
+                                family: 'Quicksand',
+                                size: 14,
+                                weight: '500'
+                            }
+                        },
+                        grid: {
+                            color: '#f3f4f6',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            font: {
+                                family: 'Quicksand'
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tanggal',
+                            color: '#6b7280',
+                            font: {
+                                family: 'Quicksand',
+                                size: 14,
+                                weight: '500'
+                            }
+                        },
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            font: {
+                                family: 'Quicksand'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Download results function
+        function downloadResults() {
+            // Show download options modal
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+              <div class="bg-white rounded-3xl p-8 max-w-md mx-4">
+                <h3 class="text-xl font-bold text-primary mb-6">Pilih Format Download</h3>
+                <div class="space-y-4">
+                  <button onclick="downloadPDF()" class="w-full bg-primary text-light px-6 py-3 rounded-full font-semibold hover:bg-opacity-90 transition-all duration-200">
+                    <i class="fas fa-file-pdf mr-2"></i> Download PDF
+                  </button> 
+                  <button onclick="closeDownloadModal()" class="w-full bg-gray-200 text-dark px-6 py-3 rounded-full font-semibold hover:bg-gray-300 transition-all duration-200">
+                    <i class="fas fa-times mr-2"></i> Batal
+                  </button>
+                </div>
+              </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+              if (e.target === modal) {
+                closeDownloadModal();
+              }
+            });
+            
+            window.downloadModal = modal;
+        }
+        
+        function closeDownloadModal() {
+            if (window.downloadModal) {
+                document.body.removeChild(window.downloadModal);
+                window.downloadModal = null;
+            }
+        }
+        
+        function downloadPDF() {
+            closeDownloadModal();
+            
+            // Get data from hidden div
+            const pdfDataDiv = document.getElementById('pdfData');
+            if (!pdfDataDiv) {
+                alert('Data PDF tidak ditemukan');
+                return;
+            }
+            
+            let chartData;
+            
+            try {
+                const chartDataStr = pdfDataDiv.dataset.chartData || '[]';
+                chartData = JSON.parse(chartDataStr);
+            } catch (error) {
+                console.error('Error parsing chart data:', error);
+                chartData = [];
+            }
+            
+            // Parse and validate all data
+            const resultsData = {
+                filename: pdfDataDiv.dataset.filename || 'unknown',
+                total_records: parseInt(pdfDataDiv.dataset.totalRecords) || 0,
+                processed_records: parseInt(pdfDataDiv.dataset.processedRecords) || 0,
+                metrics: {
+                    RMSE: parseFloat(pdfDataDiv.dataset.rmse) || 0,
+                    MAE: parseFloat(pdfDataDiv.dataset.mae) || 0,
+                    MAPE: parseFloat(pdfDataDiv.dataset.mape) || 0,
+                    R2: parseFloat(pdfDataDiv.dataset.r2) || 0
+                },
+                chart_data: Array.isArray(chartData) ? chartData : []
+            };
+            
+            // Call PDF generation function if available
+            if (typeof generateSimplePDF === 'function') {
+                generateSimplePDF(resultsData);
+            } else {
+                alert('PDF generator tidak tersedia');
+            }
+        }
+    </script>
+</body>
+</html>

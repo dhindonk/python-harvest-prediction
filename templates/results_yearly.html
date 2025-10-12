@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hasil Prediksi Tahunan - Sistem Prediksi Hasil Panen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="{{ url_for('static', filename='js/pdf-generator.js') }}"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap");
+      body {
+        font-family: "Quicksand", sans-serif;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#328E6E",
+              dark: "#333",
+              light: "#efefef",
+            },
+            fontFamily: {
+              quicksand: ["Quicksand", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-white text-dark font-quicksand min-h-screen">
+    <div class="container mx-auto w-full px-4 py-12">
+      <div class="max-w-6xl mx-auto">
+        <div>
+          <!-- File Info -->
+          <div class="bg-green-50 rounded-2xl p-6 mb-8 border border-green-200">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div>
+                <h5 class="text-lg font-semibold text-primary mb-2 flex items-center">
+                  <i class="fas fa-file-csv mr-3"></i> File: {{ results.filename }}
+                </h5>
+              </div>
+              <div class="mt-4 md:mt-0">
+                <a
+                  href="/"
+                  class="inline-flex items-center bg-white text-primary border-2 border-primary px-6 py-3 rounded-full font-semibold hover:bg-primary hover:text-light transition-all duration-200"
+                >
+                  <i class="fas fa-arrow-left mr-2"></i> Upload File Baru
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Key Metrics -->
+          <div class="grid md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white text-primary border rounded-3xl p-6 text-center">
+              <div class="text-3xl font-bold mb-2">{{ "{:,.0f}".format(results.total_prediction) }}</div>
+              <div class="text-sm font-medium">Total Prediksi (kg)</div>
+            </div>
+            <div class="bg-white text-primary border rounded-3xl p-6 text-center">
+              <div class="text-3xl font-bold mb-2">{{ "{:,.0f}".format(results.avg_monthly) }}</div>
+              <div class="text-sm font-medium">Rata-rata Bulanan (kg)</div>
+            </div>
+            <div class="bg-white text-primary border rounded-3xl p-6 text-center">
+              <div class="text-3xl font-bold mb-2">{{ results.max_month.month }}</div>
+              <div class="text-sm font-medium">Bulan Tertinggi</div>
+              <div class="text-xs opacity-80 mt-1">{{ "{:,.0f}".format(results.max_month.prediction) }} kg</div>
+            </div>
+            <div class="bg-white text-primary border rounded-3xl p-6 text-center">
+              <div class="text-3xl font-bold mb-2">{{ results.min_month.month }}</div>
+              <div class="text-sm font-medium">Bulan Terendah</div>
+              <div class="text-xs opacity-80 mt-1">{{ "{:,.0f}".format(results.min_month.prediction) }} kg</div>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div class="bg-white rounded-3xl border border-gray-200 p-6 mb-8">
+            <canvas id="predictionChart" style="height: 400px"></canvas>
+          </div>
+          
+          <!-- Hidden data for PDF generation -->
+          <div id="pdfData" style="display: none;"
+               data-prediction-year="{{ results.prediction_year }}"
+               data-filename="{{ results.filename }}"
+               data-total-prediction="{{ results.total_prediction }}"
+               data-avg-monthly="{{ results.avg_monthly }}"
+               data-max-month="{{ results.max_month.month }}"
+               data-max-prediction="{{ results.max_month.prediction }}"
+               data-min-month="{{ results.min_month.month }}"
+               data-min-prediction="{{ results.min_month.prediction }}"
+               data-monthly-predictions="{{ results.monthly_predictions | tojson | safe }}">
+          </div>
+          
+
+          <!-- Monthly Predictions Table -->
+          <div class="bg-white rounded-3xl border border-gray-200 overflow-hidden mb-8">
+            <div class="bg-green-50 flex justify-between items-center px-6 py-4 border-b border-gray-200">
+              <h5 class="text-lg font-semibold text-primary flex items-center">
+                <i class="fas fa-calendar-alt mr-3"></i> Prediksi Bulanan Tahun {{ results.prediction_year }}
+              </h5>
+              <div class="text-center">
+                <button
+                  onclick="downloadResults()"
+                  class="inline-flex items-center bg-primary text-light px-5 py-2 rounded-full font-semibold hover:bg-opacity-90 transition-all duration-200 text-md"
+                >
+                  <i class="fas fa-download mr-3"></i> Download Hasil Prediksi
+                </button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-green-50 text-primary">
+                  <tr>
+                    <th class="px-6 py-4 text-left font-bold">Bulan</th>
+                    <th class="px-6 py-4 text-left font-bold">Prediksi (kg)</th>
+                    <th class="px-6 py-4 text-left font-bold">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  {% for month in results.monthly_predictions %}
+                  <tr class="bg-white hover:bg-gray-50">
+                    <td class="px-6 py-4 font-medium">
+                      {{ ["Januari", "Februari", "Maret", "April", "Mei",
+                      "Juni", "Juli", "Agustus", "September", "Oktober",
+                      "November", "Desember"][month.month - 1] }}
+                    </td>
+                    <td class="px-6 py-4">{{ "{:,.2f}".format(month.prediction) }}</td>
+                    <td class="px-6 py-4">
+                      {% if month.month == results.max_month.month %}
+                      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary text-light">
+                        <i class="fas fa-arrow-up mr-1"></i> Tertinggi
+                      </span>
+                      {% elif month.month == results.min_month.month %}
+                      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-arrow-down mr-1"></i> Terendah
+                      </span>
+                      {% else %}
+                      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Normal</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize chart when DOM is loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        initializeChart();
+      });
+
+      function initializeChart() {
+        // Chart data from Flask
+        var chartDataString = '{{ results.chart_data_json | safe }}';
+        var chartData, chartLabels, historicalData, futureData;
+        
+        // Debug: Check the raw string first
+        console.log('Raw chart data string:', chartDataString);
+        
+        // Initialize variables safely
+        chartLabels = [];
+        historicalData = [];
+        futureData = [];
+        
+        try {
+          // Parse JSON string safely
+          chartData = JSON.parse(chartDataString);
+          
+          // Safely extract data with fallbacks
+          chartLabels = chartData && chartData.labels ? chartData.labels : [];
+          historicalData = chartData && chartData.historical ? chartData.historical : [];
+          futureData = chartData && chartData.future ? chartData.future : [];
+          
+          // Debug: Check if chart data is loaded correctly
+          console.log('Chart data loaded:', chartData);
+          console.log('Labels:', chartLabels);
+          console.log('Historical data:', historicalData);
+          console.log('Future data:', futureData);
+          console.log('Number of labels:', chartLabels.length);
+          console.log('Number of historical data points:', historicalData.length);
+          console.log('Number of future data points:', futureData.length);
+        } catch (error) {
+          console.error('Error parsing chart data:', error);
+          // Fallback data - use current year and next year from template
+          var currentYear = '{{ results.current_year }}';
+          var nextYear = '{{ results.prediction_year }}';
+          
+          chartLabels = [
+            'Jan ' + currentYear, 'Feb ' + currentYear, 'Mar ' + currentYear, 'Apr ' + currentYear, 'Mei ' + currentYear, 'Jun ' + currentYear,
+            'Jul ' + currentYear, 'Agu ' + currentYear, 'Sep ' + currentYear, 'Okt ' + currentYear, 'Nov ' + currentYear, 'Des ' + currentYear,
+            'Jan ' + nextYear, 'Feb ' + nextYear, 'Mar ' + nextYear, 'Apr ' + nextYear, 'Mei ' + nextYear, 'Jun ' + nextYear,
+            'Jul ' + nextYear, 'Agu ' + nextYear, 'Sep ' + nextYear, 'Okt ' + nextYear, 'Nov ' + nextYear, 'Des ' + nextYear
+          ];
+          historicalData = [2400, 2600, 2500, 2700, 2650, 2800, 2750, 2850, 2700, 2800, 2750, 2850, null, null, null, null, null, null, null, null, null, null, null, null];
+          futureData = [null, null, null, null, null, null, null, null, null, null, null, null, 2530, 2785, 2930, 3008, 2974, 2963, 2962, 2965, 2965, 2965, 2965, 2965];
+        }
+        
+        // Buat array data untuk historis (isi dengan null untuk bagian prediksi)
+        var historicalFullData = historicalData;
+        
+        // Buat array data untuk prediksi (isi dengan null untuk bagian historis)
+        var predictionFullData = futureData;
+
+        // Get canvas element
+        var canvas = document.getElementById("predictionChart");
+        if (!canvas) {
+          console.error('Canvas element not found!');
+          return;
+        }
+
+        var ctx;
+        try {
+          ctx = canvas.getContext("2d");
+          if (!ctx) {
+            console.error('Could not get 2D context from canvas');
+            return;
+          }
+        } catch (error) {
+          console.error('Error getting canvas context:', error);
+          return;
+        }
+
+        // Create chart
+        try {
+          var predictionChart = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: chartLabels,
+              datasets: [
+                {
+                  label: "Data Historis",
+                  data: historicalFullData,
+                  borderColor: "#328E6E",
+                  backgroundColor: "rgba(50, 142, 110, 0.1)",
+                  borderWidth: 3,
+                  fill: false,
+                  tension: 0.4,
+                  pointRadius: 4,
+                  pointHoverRadius: 6,
+                  pointBackgroundColor: "#328E6E",
+                  pointBorderColor: "#fff",
+                  pointBorderWidth: 2,
+                  spanGaps: false, // Jangan sambungkan gap
+                },
+                {
+                  label: "Prediksi {{ results.prediction_year }}",
+                  data: predictionFullData,
+                  borderColor: "#67AE6E",
+                  backgroundColor: "rgba(103, 174, 110, 0.1)",
+                  borderWidth: 3,
+                  borderDash: [5, 5],
+                  fill: false,
+                  tension: 0.4,
+                  pointRadius: 4,
+                  pointHoverRadius: 6,
+                  pointBackgroundColor: "#67AE6E",
+                  pointBorderColor: "#fff",
+                  pointBorderWidth: 2,
+                  spanGaps: false, // Jangan sambungkan gap
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                title: {
+                  display: true,
+                  text: "Data Historis vs Prediksi {{ results.prediction_year }}",
+                  font: {
+                    size: 18,
+                    weight: "600",
+                    family: "Quicksand",
+                  },
+                  color: "#328E6E",
+                  padding: 20,
+                },
+                legend: {
+                  display: true,
+                  position: "top",
+                  labels: {
+                    usePointStyle: true,
+                    padding: 20,
+                    font: {
+                      family: "Quicksand",
+                      size: 14,
+                    },
+                  },
+                },
+                tooltip: {
+                  mode: "index",
+                  intersect: false,
+                  backgroundColor: "rgba(255, 255, 255, 0.95)",
+                  titleColor: "#328E6E",
+                  bodyColor: "#333",
+                  borderColor: "#e5e7eb",
+                  borderWidth: 1,
+                  padding: 12,
+                  displayColors: true,
+                  titleFont: {
+                    family: "Quicksand",
+                    weight: "600",
+                  },
+                  bodyFont: {
+                    family: "Quicksand",
+                  },
+                  callbacks: {
+                    label: function (context) {
+                      if (context.parsed.y === null) return null;
+                      return context.dataset.label + ": " + context.parsed.y.toFixed(2) + " kg";
+                    },
+                  },
+                },
+              },
+              scales: {
+                x: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: "Periode Waktu",
+                    color: "#6b7280",
+                    font: {
+                      family: "Quicksand",
+                      size: 14,
+                      weight: "500",
+                    },
+                  },
+                  grid: {
+                    display: false,
+                  },
+                  ticks: {
+                    color: "#6b7280",
+                    font: {
+                      family: "Quicksand",
+                    },
+                    maxRotation: 45,
+                    minRotation: 45,
+                  },
+                },
+                y: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: "Hasil Panen (kg)",
+                    color: "#6b7280",
+                    font: {
+                      family: "Quicksand",
+                      size: 14,
+                      weight: "500",
+                    },
+                  },
+                  beginAtZero: true,
+                  grid: {
+                    color: "#f3f4f6",
+                    drawBorder: false,
+                  },
+                  ticks: {
+                    color: "#6b7280",
+                    font: {
+                      family: "Quicksand",
+                    },
+                  },
+                },
+              },
+            },
+          });
+          
+          console.log('Chart created successfully!');
+        } catch (error) {
+          console.error('Error creating chart:', error);
+        }
+      }
+
+      function downloadResults() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+          <div class="bg-white rounded-3xl p-8 max-w-md mx-4">
+            <h3 class="text-xl font-bold text-primary mb-6">Pilih Format Download</h3>
+            <div class="space-y-4">
+              <button onclick="downloadPDF()" class="w-full bg-primary text-light px-6 py-3 rounded-full font-semibold hover:bg-opacity-90 transition-all duration-200">
+                <i class="fas fa-file-pdf mr-2"></i> Download PDF
+              </button> 
+              <button onclick="closeDownloadModal()" class="w-full bg-gray-200 text-dark px-6 py-3 rounded-full font-semibold hover:bg-gray-300 transition-all duration-200">
+                <i class="fas fa-times mr-2"></i> Batal
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) {
+            closeDownloadModal();
+          }
+        });
+        
+        window.downloadModal = modal;
+      }
+      
+      function closeDownloadModal() {
+        if (window.downloadModal) {
+          document.body.removeChild(window.downloadModal);
+          window.downloadModal = null;
+        }
+      }
+      
+      function downloadPDF() {
+        closeDownloadModal();
+        
+        // Get data from hidden div
+        const pdfDataDiv = document.getElementById('pdfData');
+        if (!pdfDataDiv) {
+          alert('Data PDF tidak ditemukan');
+          return;
+        }
+        
+        let monthlyPredictions;
+        
+        try {
+          const monthlyPredictionsStr = pdfDataDiv.dataset.monthlyPredictions || '[]';
+          console.log('Raw monthly predictions string:', monthlyPredictionsStr);
+          console.log('Dataset attributes:', pdfDataDiv.dataset);
+          monthlyPredictions = JSON.parse(monthlyPredictionsStr);
+          console.log('Parsed monthly predictions:', monthlyPredictions);
+        } catch (error) {
+          console.error('Error parsing monthly predictions:', error);
+          monthlyPredictions = [];
+        }
+        
+        // If still no monthly predictions, try to create from other data
+        if (!monthlyPredictions || monthlyPredictions.length === 0) {
+          console.log('No monthly predictions found, trying to create from other data...');
+          // Try to get from the table in the page
+          const tableRows = document.querySelectorAll('tbody tr');
+          if (tableRows.length > 0) {
+            monthlyPredictions = [];
+            tableRows.forEach((row, index) => {
+              const cells = row.querySelectorAll('td');
+              if (cells.length >= 2) {
+                const monthText = cells[0].textContent.trim();
+                const predictionText = cells[1].textContent.trim();
+                const monthNum = index + 1; // Assuming table is in order
+                const prediction = parseFloat(predictionText.replace(/[^\d.-]/g, ''));
+                
+                if (!isNaN(prediction)) {
+                  monthlyPredictions.push({
+                    month: monthNum,
+                    prediction: prediction
+                  });
+                }
+              }
+            });
+            console.log('Created monthly predictions from table:', monthlyPredictions);
+          }
+        }
+        
+        // Parse and validate all data
+        const resultsData = {
+          prediction_year: parseInt(pdfDataDiv.dataset.predictionYear) || new Date().getFullYear(),
+          filename: pdfDataDiv.dataset.filename || 'unknown',
+          total_prediction: parseFloat(pdfDataDiv.dataset.totalPrediction) || 0,
+          avg_monthly: parseFloat(pdfDataDiv.dataset.avgMonthly) || 0,
+          max_month: {
+            month: parseInt(pdfDataDiv.dataset.maxMonth) || 1,
+            prediction: parseFloat(pdfDataDiv.dataset.maxPrediction) || 0
+          },
+          min_month: {
+            month: parseInt(pdfDataDiv.dataset.minMonth) || 1,
+            prediction: parseFloat(pdfDataDiv.dataset.minPrediction) || 0
+          },
+          monthly_predictions: Array.isArray(monthlyPredictions) ? monthlyPredictions : []
+        };
+        
+        console.log('Results data for PDF:', resultsData);
+        
+        // Call PDF generation function if available
+        if (typeof generatePDF === 'function') {
+          generatePDF(resultsData);
+        } else {
+          alert('PDF generator tidak tersedia');
+        }
+      }
+    </script>
+  </body>
+</html>

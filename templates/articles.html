@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Artikel Pertanian - Sistem Prediksi Hasil Panen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap");
+      body {
+        font-family: "Quicksand", sans-serif;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#328E6E",
+              dark: "#333",
+              light: "#efefef",
+            },
+            fontFamily: {
+              quicksand: ["Quicksand", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-light text-dark font-quicksand min-h-screen">
+    <!-- Navigation -->
+    <nav>
+      <div class="container mx-auto p-8">
+        <div class="flex justify-between items-center">
+          <a href="{{ url_for('index') }}" class="text-primary text-xl font-bold flex items-center">
+            <i class="fas fa-seedling mr-2"></i>
+            Sistem Prediksi Hasil Panen
+          </a>
+          <div class="flex space-x-6">
+            <a href="{{ url_for('index') }}" class="text-dark hover:text-primary transition-colors">
+              <i class="fas fa-home mr-1"></i> Beranda
+            </a>
+            <a href="{{ url_for('articles') }}" class="text-primary font-semibold">
+              <i class="fas fa-file-alt mr-1"></i> Artikel
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-12">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold text-primary mb-4">
+          <i class="fas fa-book-open mr-3"></i> Artikel Pertanian
+        </h1>
+        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+          Temukan informasi lengkap seputar budidaya lidah buaya, tips meningkatkan hasil panen, dan pengetahuan pertanian modern
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Article 1 -->
+        <div class="bg-white rounded-2xl overflow-hidden  transition-shadow duration-300">
+          <div class="h-48 overflow-hidden">
+            <img src="{{ url_for('static', filename='images/lidah_1.jpg') }}" alt="Panduan Budidaya Lidah Buaya" class="w-full h-full object-cover">
+          </div>
+          <div class="p-6">
+            <div class="flex items-center mb-3">
+              <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">Budidaya</span>
+              <span class="text-gray-500 text-sm ml-auto">5 menit baca</span>
+            </div>
+            <h3 class="text-xl font-bold text-dark mb-3">
+              Panduan Lengkap Budidaya Lidah Buaya untuk Pemula
+            </h3>
+            <p class="text-gray-600 mb-4">
+              Pelajari teknik budidaya lidah buaya yang efektif mulai dari pemilihan bibit hingga panen, termasuk perawatan optimal untuk hasil maksimal.
+            </p>
+            <a href="{{ url_for('article_detail', article_id='panduan-budidaya-lidah-buaya') }}" class="inline-flex items-center text-primary font-semibold hover:text-green-700 transition-colors">
+              Baca Selengkapnya <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Article 2 -->
+        <div class="bg-white rounded-2xl overflow-hidden  transition-shadow duration-300">
+          <div class="h-48 overflow-hidden">
+            <img src="{{ url_for('static', filename='images/lidah_2.jpg') }}" alt="Strategi Meningkatkan Panen" class="w-full h-full object-cover">
+          </div>
+          <div class="p-6">
+            <div class="flex items-center mb-3">
+              <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Optimasi</span>
+              <span class="text-gray-500 text-sm ml-auto">7 menit baca</span>
+            </div>
+            <h3 class="text-xl font-bold text-dark mb-3">
+              7 Strategi Efektif Meningkatkan Hasil Panen Lidah Buaya
+            </h3>
+            <p class="text-gray-600 mb-4">
+              Temukan strategi terbukti untuk meningkatkan produktivitas panen lidah buaya hingga 40% dengan teknik pertanian modern.
+            </p>
+            <a href="{{ url_for('article_detail', article_id='strategi-meningkatkan-panen') }}" class="inline-flex items-center text-primary font-semibold hover:text-green-700 transition-colors">
+              Baca Selengkapnya <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Article 3 -->
+        <div class="bg-white rounded-2xl overflow-hidden  transition-shadow duration-300">
+          <div class="h-48 overflow-hidden">
+            <img src="{{ url_for('static', filename='images/lidah_3.jpg') }}" alt="Teknologi Prediksi Panen" class="w-full h-full object-cover">
+          </div>
+          <div class="p-6">
+            <div class="flex items-center mb-3">
+              <span class="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded">Penelitian</span>
+              <span class="text-gray-500 text-sm ml-auto">6 menit baca</span>
+            </div>
+            <h3 class="text-xl font-bold text-dark mb-3">
+              Inovasi Teknologi Prediksi Panen untuk Maksimalkan Profitabilitas
+            </h3>
+            <p class="text-gray-600 mb-4">
+              Bagaimana teknologi prediksi berbasis AI dan LSTM dapat membantu petani merencanakan panen yang lebih efisien dan menguntungkan.
+            </p>
+            <a href="{{ url_for('article_detail', article_id='teknologi-prediksi-panen') }}" class="inline-flex items-center text-primary font-semibold hover:text-green-700 transition-colors">
+              Baca Selengkapnya <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Resources Section -->
+      <div class="mt-16 bg-gradient-to-r from-primary to-green-600 rounded-3xl p-8 text-white">
+        <div class="text-center">
+          <h2 class="text-3xl font-bold mb-4">
+            <i class="fas fa-lightbulb mr-2"></i> Butuh Bantuan Prediksi Panen?
+          </h2>
+          <p class="text-lg mb-6 max-w-2xl mx-auto">
+            Gunakan sistem prediksi kami untuk merencanakan panen yang lebih optimal berdasarkan data historis dan analisis mendalam.
+          </p>
+          <a href="{{ url_for('index') }}" class="bg-white text-primary px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors inline-block">
+            <i class="fas fa-chart-line mr-2"></i> Coba Prediksi Panen
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
