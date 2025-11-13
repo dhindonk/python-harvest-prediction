@@ -465,6 +465,106 @@ class SimpleModelLoader:
             import traceback
             traceback.print_exc()
             return None, None, None
+    
+    def generate_conclusion_and_suggestion(self, future_df, current_year, prediction_year, metrics=None):
+        """Generate conclusion and suggestion based on prediction results"""
+        try:
+            # Get future predictions only
+            future_only = future_df[future_df['prediction_type'] == 'future']
+            
+            if len(future_only) == 0:
+                return {
+                    'conclusion': 'Tidak cukup data untuk生成 kesimpulan.',
+                    'suggestion': 'Mohon periksa kembali data input dan pastikan data mencukupi untuk prediksi.',
+                    'detailed_explanation': 'Sistem tidak dapat生成 analisis detail karena keterbatasan data.'
+                }
+            
+            # Calculate statistics
+            total_prediction = future_only['predicted'].sum()
+            avg_monthly = future_only['predicted'].mean()
+            max_month = future_only.loc[future_only['predicted'].idxmax()]
+            min_month = future_only.loc[future_only['predicted'].idxmin()]
+            
+            # Get historical data for comparison
+            historical_data = future_df[future_df['prediction_type'] == 'historical']
+            if len(historical_data) > 0:
+                historical_avg = historical_data['predicted'].mean()
+                trend = "meningkat" if avg_monthly > historical_avg else "menurun"
+                trend_percentage = abs((avg_monthly - historical_avg) / historical_avg * 100) if historical_avg > 0 else 0
+            else:
+                trend = "stabil"
+                trend_percentage = 0
+            
+            # Generate conclusion
+            conclusion = f"Berdasarkan analisis data historis dan prediksi menggunakan model LSTM, "
+            conclusion += f"hasil panen lidah buaya untuk tahun {prediction_year} diprediksi akan {trend} "
+            conclusion += f"sebesar {trend_percentage:.1f}% dibandingkan dengan rata-rata historis. "
+            
+            if metrics and 'MAPE' in metrics:
+                if metrics['MAPE'] < 10:
+                    accuracy_level = "sangat akurat"
+                elif metrics['MAPE'] < 20:
+                    accuracy_level = "akurat"
+                elif metrics['MAPE'] < 30:
+                    accuracy_level = "cukup akurat"
+                else:
+                    accuracy_level = "kurang akurat"
+                conclusion += f"Model prediksi memiliki tingkat akurasi {accuracy_level} dengan MAPE {metrics['MAPE']:.2f}%. "
+            
+            conclusion += f"Bulan {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][int(max_month['month'])-1]} "
+            conclusion += f"diprediksi memberikan hasil tertinggi sebesar {max_month['predicted']:.0f} kg, "
+            conclusion += f"sedangkan bulan {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][int(min_month['month'])-1]} "
+            conclusion += f"memberikan hasil terendah sebesar {min_month['predicted']:.0f} kg."
+            
+            # Generate suggestion based on trend and predictions
+            suggestion = f"Berdasarkan pola prediksi, disarankan untuk: "
+            
+            if trend == "meningkat":
+                suggestion += f"1. Mempersiapkan kapasitas penyimpanan dan logistik yang memadai untuk mengantisipasi peningkatan hasil panen sebesar {trend_percentage:.1f}%. "
+                suggestion += f"2. Mengoptimalkan jadwal panen pada bulan dengan prediksi hasil tertinggi ({['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][int(max_month['month'])-1]}). "
+                suggestion += "3. Mempertimbangkan untuk meningkatkan investasi dalam pemupukan dan perawatan menjelang periode panen puncak."
+            elif trend == "menurun":
+                suggestion += f"1. Fokus pada praktik budidaya yang dapat meningkatkan hasil panen mengingat prediksi penurunan sebesar {trend_percentage:.1f}%. "
+                suggestion += "2. Meningkatkan monitoring kesehatan tanaman dan pencegahan penyakit. "
+                suggestion += "3. Mengoptimalkan dosis pupuk dan irigasi untuk mengantisipasi penurunan produktivitas."
+            else:
+                suggestion += "1. Mempertahankan praktik budidaya saat ini yang telah terbukti efektif. "
+                suggestion += "2. Fokus pada efisiensi operasional dan pengurangan biaya produksi. "
+                suggestion += "3. Melakukan evaluasi berkala untuk identifikasi area perbaikan."
+            
+            # Add specific recommendations based on prediction patterns
+            if max_month['predicted'] > avg_monthly * 1.2:
+                suggestion += f"4. Bulan {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][int(max_month['month'])-1]} menunjukkan potensi hasil yang jauh di atas rata-rata, pertimbangkan untuk alokasi sumber daya tambahan pada periode ini."
+            
+            # Generate detailed explanation
+            detailed_explanation = f"Analisis prediksi untuk tahun {prediction_year} menunjukkan pola musiman yang jelas. "
+            detailed_explanation += f"Total prediksi hasil panen untuk tahun {prediction_year} adalah {total_prediction:.0f} kg dengan rata-rata bulanan {avg_monthly:.0f} kg. "
+            
+            if len(historical_data) > 0:
+                detailed_explanation += f"Jika dibandingkan dengan rata-rata historis sebesar {historical_avg:.0f} kg, "
+                detailed_explanation += f"terdapat {trend} sebesar {trend_percentage:.1f}%. "
+            
+            detailed_explanation += f"Variasi hasil panen antar bulan menunjukkan bahwa bulan {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][int(max_month['month'])-1]} "
+            detailed_explanation += f"merupakan periode optimal dengan prediksi {max_month['predicted']:.0f} kg, "
+            detailed_explanation += f"sedangkan bulan {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][int(min_month['month'])-1]} "
+            detailed_explanation += f"memerlukan perhatian khusus dengan prediksi hasil terendah sebesar {min_month['predicted']:.0f} kg. "
+            
+            detailed_explanation += "Faktor-faktor seperti kondisi iklim, ketersediaan nutrisi tanah, dan praktik budidaya mempengaruhi variasi ini. "
+            detailed_explanation += "Disarankan untuk menggunakan informasi ini untuk perencanaan jangka panjang dan alokasi sumber daya yang lebih efisien."
+            
+            return {
+                'conclusion': conclusion,
+                'suggestion': suggestion,
+                'detailed_explanation': detailed_explanation
+            }
+            
+        except Exception as e:
+            print(f"[ERROR] Error generating conclusion: {e}")
+            return {
+                'conclusion': 'Terjadi kesalahan dalam生成 kesimpulan.',
+                'suggestion': 'Mohon periksa kembali data input dan coba lagi.',
+                'detailed_explanation': 'Sistem tidak dapat生成 analisis detail karena terjadi kesalahan internal.'
+            }
 
 # Initialize model loader
 model_loader = SimpleModelLoader()
@@ -1313,6 +1413,9 @@ def predict_year():
                 'total_months': len(all_labels)
             }
             
+            # Generate conclusion and suggestion
+            analysis = model_loader.generate_conclusion_and_suggestion(future_df, current_year, prediction_year)
+            
             # Prepare results
             results = {
                 'chart_data': chart_data,
@@ -1335,7 +1438,8 @@ def predict_year():
                         'month': int(row['month']),
                         'prediction': round(float(row['predicted']), 2)
                     } for _, row in future_only.iterrows()
-                ]
+                ],
+                'analysis': analysis  # Add conclusion and suggestion
             }
             
             return render_template('results_yearly.html', results=results)
