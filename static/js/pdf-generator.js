@@ -67,7 +67,80 @@ function generatePDF(results) {
       yPosition += 6;
     }
     
-    yPosition += 5;
+    yPosition += 10;
+    
+    // Analysis and Conclusion Section
+    if (results.analysis) {
+      doc.setFontSize(16);
+      doc.setTextColor(50, 142, 110);
+      doc.text('Analisis & Kesimpulan', margin, yPosition);
+      yPosition += 10;
+      
+      // Conclusion
+      if (results.analysis.conclusion) {
+        doc.setFontSize(12);
+        doc.setTextColor(50, 142, 110);
+        doc.text('Kesimpulan:', margin, yPosition);
+        yPosition += 6;
+        
+        doc.setFontSize(10);
+        doc.setTextColor(51, 51, 51);
+        const conclusionLines = doc.splitTextToSize(results.analysis.conclusion, pageWidth - 2 * margin);
+        conclusionLines.forEach(line => {
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = margin;
+          }
+          doc.text(line, margin, yPosition);
+          yPosition += 5;
+        });
+        yPosition += 5;
+      }
+      
+      // Suggestion
+      if (results.analysis.suggestion) {
+        doc.setFontSize(12);
+        doc.setTextColor(50, 142, 110);
+        doc.text('Rekomendasi:', margin, yPosition);
+        yPosition += 6;
+        
+        doc.setFontSize(10);
+        doc.setTextColor(51, 51, 51);
+        const suggestionLines = doc.splitTextToSize(results.analysis.suggestion, pageWidth - 2 * margin);
+        suggestionLines.forEach(line => {
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = margin;
+          }
+          doc.text(line, margin, yPosition);
+          yPosition += 5;
+        });
+        yPosition += 5;
+      }
+      
+      // Detailed Explanation
+      if (results.analysis.detailed_explanation) {
+        doc.setFontSize(12);
+        doc.setTextColor(50, 142, 110);
+        doc.text('Penjelasan Detail:', margin, yPosition);
+        yPosition += 6;
+        
+        doc.setFontSize(10);
+        doc.setTextColor(51, 51, 51);
+        const explanationLines = doc.splitTextToSize(results.analysis.detailed_explanation, pageWidth - 2 * margin);
+        explanationLines.forEach(line => {
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = margin;
+          }
+          doc.text(line, margin, yPosition);
+          yPosition += 5;
+        });
+        yPosition += 5;
+      }
+      
+      yPosition += 5;
+    }
     
     // Monthly Predictions Table
     doc.setFontSize(16);
