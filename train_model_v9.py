@@ -489,12 +489,14 @@ def main(file_path='data_training.csv', forecast_months=12):
             
             # Calculate and display metrics
             mse = mean_squared_error(y_test_inv, y_pred_inv)
+            rmse = np.sqrt(mse)  # Root Mean Squared Error
             mae = mean_absolute_error(y_test_inv, y_pred_inv)
             mape = mean_absolute_percentage_error(y_test_inv, y_pred_inv)
             r2 = r2_score(y_test_inv, y_pred_inv)
             
             print(f"\n[METRICS] Model Performance:")
             print(f"   • Mean Squared Error (MSE): {mse:.4f}")
+            print(f"   • Root Mean Squared Error (RMSE): {rmse:.4f}")
             print(f"   • Mean Absolute Error (MAE): {mae:.4f}")
             print(f"   • Mean Absolute Percentage Error (MAPE): {mape:.4f}")
             print(f"   • R-squared (R²): {r2:.4f}")

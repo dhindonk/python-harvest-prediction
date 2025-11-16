@@ -36,10 +36,10 @@ STARTING ENHANCED TRAINING PIPELINE V10 (LOKAL)
    Training/Validation/Test: 24 / 5 / 8
 
 [MODEL] Building Enhanced Multi-Output LSTM...
-2025-11-16 16:16:09.266645: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+2025-11-16 16:48:26.942864: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
 To enable the following instructions: SSE SSE2 SSE3 SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
    ✓ Model built successfully. Parameters: 45,601
-
+ 
 [TRAINING] Starting training...
 Epoch 1/300
 6/6 [==============================] - 18s 812ms/step - loss: 0.4059 - mae: 0.5112 - val_loss: 0.1757 - val_mae: 0.1959 - lr: 0.0010
@@ -51,7 +51,7 @@ Epoch 259/300
 Epoch 260/300
 5/6 [========================>.....] - ETA: 0s - loss: 0.0828 - mae: 0.1366Restoring model weights from the end of the best epoch: 200.
 6/6 [==============================] - 0s 55ms/step - loss: 0.0769 - mae: 0.1266 - val_loss: 0.0977 - val_mae: 0.2119 - lr: 3.1250e-05
-Epoch 260: early stopping
+Epoch 233: early stopping
    ✓ Training completed!
 
 [VISUALIZATION] Generating training curves...
@@ -62,20 +62,21 @@ Epoch 260: early stopping
    ✓ Prediction vs actual plot saved to visualizations/prediction_vs_actual.png
 
 [METRICS] Model Performance:
-   • Mean Squared Error (MSE): 6847597.3092
-   • Mean Absolute Error (MAE): 2197.5177
-   • Mean Absolute Percentage Error (MAPE): 0.2129
-   • R-squared (R²): -0.0076
+   • Mean Squared Error (MSE): 5976847.6221
+   • Root Mean Squared Error (RMSE): 2444.7592
+   • Mean Absolute Error (MAE): 2005.0116
+   • Mean Absolute Percentage Error (MAPE): 0.1834
+   • R-squared (R²): 0.1206
 
 [SAVING MODEL WEIGHTS]
-   ✓ Model weights saved: models/harvest_lstm_enhanced_weights_20251116_162144.weights.h5
+   ✓ Model weights saved: models/harvest_lstm_enhanced_weights_20251116_165515.weights.h5
 
 [SAVING PROCESSOR PARAMETERS AS JSON]
-   ✓ Processor parameters (JSON) saved: models/harvest_processor_params_20251116_162144.json
+   ✓ Processor parameters (JSON) saved: models/harvest_processor_params_20251116_165515.json
 
 [SUMMARY]
-   Model weights saved: models/harvest_lstm_enhanced_weights_20251116_162144.weights.h5
-   Processor params saved: models/harvest_processor_params_20251116_162144.json
+   Model weights saved: models/harvest_lstm_enhanced_weights_20251116_165515.weights.h5
+   Processor params saved: models/harvest_processor_params_20251116_165515.json
 
 ================================================================================
 ENHANCED TRAINING V10 (LOKAL) COMPLETED SUCCESSFULLY
