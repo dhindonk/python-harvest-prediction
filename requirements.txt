@@ -7,6 +7,6 @@ seaborn==0.12.2
 joblib==1.2.0
 flask==2.3.3
 werkzeug==2.3.7
-flask==2.3.3
-werkzeug==2.3.7
 requests==2.31.0
+openpyxl
+statsmodels>=0.14.0
