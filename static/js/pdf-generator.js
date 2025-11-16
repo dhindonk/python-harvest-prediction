@@ -227,8 +227,12 @@ function generatePDF(results) {
         doc.text((month.prediction || 0).toFixed(2), margin + 65, yPosition);
         
         let status = 'Normal';
-        if (results.max_month && month.month === results.max_month.month) status = 'Tertinggi';
-        else if (results.min_month && month.month === results.min_month.month) status = 'Terendah';
+        // Use both month number and month name for comparison
+        const maxMonthNum = results.max_month ? (results.max_month.month || results.max_month.month_name) : null;
+        const minMonthNum = results.min_month ? (results.min_month.month || results.min_month.month_name) : null;
+        
+        if (maxMonthNum && (month.month === maxMonthNum || monthName === maxMonthNum)) status = 'Tertinggi';
+        else if (minMonthNum && (month.month === minMonthNum || monthName === minMonthNum)) status = 'Terendah';
         
         doc.text(status, margin + 125, yPosition);
         yPosition += 8;
