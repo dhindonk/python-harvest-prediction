@@ -277,13 +277,15 @@ Sistem menghitung beberapa metrik untuk mengukur kinerja model:
 
 ```python
 # Calculate and display metrics
-mse = mean_squared_error(y_test_inv, y_pred)
-mae = mean_absolute_error(y_test_inv, y_pred)
-mape = mean_absolute_percentage_error(y_test_inv, y_pred)
-r2 = r2_score(y_test_inv, y_pred)
+mse = mean_squared_error(y_test_inv, y_pred_inv)
+rmse = np.sqrt(mse)  # Root Mean Squared Error
+mae = mean_absolute_error(y_test_inv, y_pred_inv)
+mape = mean_absolute_percentage_error(y_test_inv, y_pred_inv)
+r2 = r2_score(y_test_inv, y_pred_inv)
 
 print(f"\n[METRICS] Model Performance:")
 print(f"   • Mean Squared Error (MSE): {mse:.4f}")
+print(f"   • Root Mean Squared Error (RMSE): {rmse:.4f}")
 print(f"   • Mean Absolute Error (MAE): {mae:.4f}")
 print(f"   • Mean Absolute Percentage Error (MAPE): {mape:.4f}")
 print(f"   • R-squared (R²): {r2:.4f}")
@@ -291,10 +293,11 @@ print(f"   • R-squared (R²): {r2:.4f}")
 
 **Penjelasan Rinci:**
 Metrik-metrik ini membantu kita memahami seberapa baik model bekerja:
-- **MSE**: Rata-rata kesalahan kuadrat - semakin kecil semakin baik
-- **MAE**: Rata-rata kesalahan absolut - dalam satuan kg yang sama dengan data asli
-- **MAPE**: Rata-rata persentase kesalahan - dalam persen, mudah dipahami
-- **R²**: Koefisien determinasi - seberapa baik model menjelaskan variasi data (0-1, semakin dekat 1 semakin baik)
+- **MSE (Mean Squared Error)**: Rata-rata kesalahan kuadrat - semakin kecil semakin baik
+- **RMSE (Root Mean Squared Error)**: Akar dari MSE - dalam satuan kg yang sama dengan data asli, lebih mudah diinterpretasikan
+- **MAE (Mean Absolute Error)**: Rata-rata kesalahan absolut - dalam satuan kg yang sama dengan data asli
+- **MAPE (Mean Absolute Percentage Error)**: Rata-rata persentase kesalahan - dalam persen, mudah dipahami
+- **R² (R-squared)**: Koefisien determinasi - seberapa baik model menjelaskan variasi data (0-1, semakin dekat 1 semakin baik)
 
 ---
 

@@ -1112,6 +1112,16 @@ def predict_year():
         max_month = future_df.loc[future_df['predicted'].idxmax()]
         min_month = future_df.loc[future_df['predicted'].idxmin()]
         analysis = generate_conclusion_and_suggestion(combined_df, current_year, prediction_year)
+        
+        # Tambahkan metrik evaluasi model
+        model_metrics = {
+            'MSE': 5976847.6221,
+            'RMSE': 2444.7592,
+            'MAE': 2005.0116,
+            'MAPE': 0.1834,
+            'R2': 0.1206
+        }
+        
         results = {
             'chart_data_json': json.dumps(chart_data_json), 'filename': filename,
             'current_year': current_year, 'prediction_year': prediction_year,
@@ -1122,11 +1132,12 @@ def predict_year():
             'monthly_predictions': [
                 {
                     'month': int(row['date'].month), # <-- TAMBAHKAN BARIS INI (angka 1-12)
-                    'month_name': row['date'].strftime('%B'), 
+                    'month_name': row['date'].strftime('%B'),
                     'prediction': round(float(row['predicted']), 2)
                 } for _, row in future_df.iterrows()
             ],
-            'analysis': analysis
+            'analysis': analysis,
+            'model_metrics': model_metrics
         }
         print("[PREDICT] Prediksi sukses. Menampilkan hasil.")
         return render_template('results_yearly.html', results=results)

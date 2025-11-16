@@ -67,6 +67,70 @@ function generatePDF(results) {
       yPosition += 6;
     }
     
+    // Model Metrics Section
+    if (results.model_metrics) {
+      yPosition += 10;
+      doc.setFontSize(16);
+      doc.setTextColor(50, 142, 110);
+      doc.text('Metrik Evaluasi Model', margin, yPosition);
+      yPosition += 8;
+      
+      doc.setFontSize(11);
+      doc.setTextColor(51, 51, 51);
+      
+      // MSE
+      doc.text('MSE (Mean Squared Error): ' + (results.model_metrics.MSE ? results.model_metrics.MSE.toFixed(4) : '0'), margin, yPosition);
+      yPosition += 6;
+      
+      // RMSE
+      doc.text('RMSE (Root Mean Squared Error): ' + (results.model_metrics.RMSE ? results.model_metrics.RMSE.toFixed(4) : '0') + ' kg', margin, yPosition);
+      yPosition += 6;
+      
+      // MAE
+      doc.text('MAE (Mean Absolute Error): ' + (results.model_metrics.MAE ? results.model_metrics.MAE.toFixed(4) : '0') + ' kg', margin, yPosition);
+      yPosition += 6;
+      
+      // MAPE
+      doc.text('MAPE (Mean Absolute Percentage Error): ' + (results.model_metrics.MAPE ? (results.model_metrics.MAPE * 100).toFixed(2) : '0') + '%', margin, yPosition);
+      yPosition += 6;
+      
+      // R²
+      doc.text('R² (Koefisien Determinasi): ' + (results.model_metrics.R2 !== undefined ? results.model_metrics.R2.toFixed(4) : '0'), margin, yPosition);
+      yPosition += 10;
+      
+      // Interpretasi Metrik
+      doc.setFontSize(12);
+      doc.setTextColor(50, 142, 110);
+      doc.text('Interpretasi Metrik:', margin, yPosition);
+      yPosition += 6;
+      
+      doc.setFontSize(10);
+      doc.setTextColor(51, 51, 51);
+      const rmse = results.model_metrics.RMSE || 0;
+      const mape = results.model_metrics.MAPE || 0;
+      const r2 = results.model_metrics.R2 || 0;
+      
+      const interpretation = [
+        '• RMSE (' + rmse.toFixed(2) + ' kg): Rata-rata kesalahan prediksi model adalah sekitar ' + rmse.toFixed(0) + ' kg',
+        '• MAPE (' + (mape * 100).toFixed(2) + '%): Prediksi model memiliki kesalahan rata-rata sebesar ' + (mape * 100).toFixed(1) + '% dari nilai aktual',
+        '• R² (' + r2.toFixed(4) + '): Model dapat menjelaskan ' + (r2 * 100).toFixed(1) + '% variasi dalam data hasil panen'
+      ];
+      
+      interpretation.forEach(line => {
+        if (yPosition > 270) {
+          doc.addPage();
+          yPosition = margin;
+        }
+        const interpretationLines = doc.splitTextToSize(line, pageWidth - 2 * margin);
+        interpretationLines.forEach(interpLine => {
+          doc.text(interpLine, margin, yPosition);
+          yPosition += 5;
+        });
+      });
+      
+      yPosition += 5;
+    }
+    
     yPosition += 10;
     
     // Analysis and Conclusion Section

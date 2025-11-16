@@ -99,7 +99,12 @@
                data-monthly-predictions="{{ results.monthly_predictions | tojson | safe }}"
                data-conclusion="{{ results.analysis.conclusion | safe }}"
                data-suggestion="{{ results.analysis.suggestion | safe }}"
-               data-detailed-explanation="{{ results.analysis.detailed_explanation | safe }}">
+               data-detailed-explanation="{{ results.analysis.detailed_explanation | safe }}"
+               data-mse="{{ results.model_metrics.MSE }}"
+               data-rmse="{{ results.model_metrics.RMSE }}"
+               data-mae="{{ results.model_metrics.MAE }}"
+               data-mape="{{ results.model_metrics.MAPE }}"
+               data-r2="{{ results.model_metrics.R2 }}">
           </div>
           
 
@@ -170,6 +175,58 @@
                 <p class="text-sm text-gray-500 mt-2">Menampilkan 2 dari {{ results.monthly_predictions|length }} prediksi</p>
               </div>
               {% endif %}
+            </div>
+          </div>
+
+          <!-- Model Metrics Section -->
+          <div class="rounded-3xl p-8 mb-8 border border-green-200">
+            <div class="text-center mb-8">
+              <h2 class="text-3xl font-bold text-primary mb-4">
+                <i class="fas fa-chart-bar mr-3"></i> Metrik Evaluasi Model
+              </h2>
+              <p class="text-gray-600 max-w-2xl mx-auto">
+                Berikut adalah metrik evaluasi model yang digunakan untuk prediksi hasil panen
+              </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 mb-6">
+              <div class="bg-white rounded-2xl p-6 border">
+                <h3 class="text-lg font-bold text-primary mb-2">MSE</h3>
+                <p class="text-2xl font-bold text-gray-800">{{ "{:,.4f}".format(results.model_metrics.MSE) }}</p>
+                <p class="text-sm text-gray-600 mt-2">Mean Squared Error</p>
+              </div>
+              <div class="bg-white rounded-2xl p-6 border">
+                <h3 class="text-lg font-bold text-primary mb-2">RMSE</h3>
+                <p class="text-2xl font-bold text-gray-800">{{ "{:,.4f}".format(results.model_metrics.RMSE) }}</p>
+                <p class="text-sm text-gray-600 mt-2">Root Mean Squared Error (kg)</p>
+              </div>
+              <div class="bg-white rounded-2xl p-6 border">
+                <h3 class="text-lg font-bold text-primary mb-2">MAE</h3>
+                <p class="text-2xl font-bold text-gray-800">{{ "{:,.4f}".format(results.model_metrics.MAE) }}</p>
+                <p class="text-sm text-gray-600 mt-2">Mean Absolute Error (kg)</p>
+              </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+              <div class="bg-white rounded-2xl p-6 border">
+                <h3 class="text-lg font-bold text-primary mb-2">MAPE</h3>
+                <p class="text-2xl font-bold text-gray-800">{{ "{:,.4f}".format(results.model_metrics.MAPE) }}</p>
+                <p class="text-sm text-gray-600 mt-2">Mean Absolute Percentage Error</p>
+              </div>
+              <div class="bg-white rounded-2xl p-6 border">
+                <h3 class="text-lg font-bold text-primary mb-2">R²</h3>
+                <p class="text-2xl font-bold text-gray-800">{{ "{:,.4f}".format(results.model_metrics.R2) }}</p>
+                <p class="text-sm text-gray-600 mt-2">Koefisien Determinasi</p>
+              </div>
+            </div>
+
+            <div class="bg-green-50 rounded-2xl p-6 mt-6 border border-green-200">
+              <h3 class="text-lg font-bold text-primary mb-3">Interpretasi Metrik</h3>
+              <div class="text-sm text-gray-700">
+                <p class="mb-2">• <strong>RMSE ({{ "{:,.2f}".format(results.model_metrics.RMSE) }} kg)</strong>: Rata-rata kesalahan prediksi model adalah sekitar {{ "{:,.0f}".format(results.model_metrics.RMSE) }} kg</p>
+                <p class="mb-2">• <strong>MAPE ({{ "{:.2%}".format(results.model_metrics.MAPE) }})</strong>: Prediksi model memiliki kesalahan rata-rata sebesar {{ "{:.1%}".format(results.model_metrics.MAPE) }} dari nilai aktual</p>
+                <p>• <strong>R² ({{ "{:.4f}".format(results.model_metrics.R2) }})</strong>: Model dapat menjelaskan {{ "{:.1%}".format(results.model_metrics.R2) }} variasi dalam data hasil panen</p>
+              </div>
             </div>
           </div>
 
@@ -265,10 +322,10 @@
           var nextYear = '{{ results.prediction_year }}';
           
           chartLabels = [
-            'Jan ' + currentYear, 'Feb ' + currentYear, 'Mar ' + currentYear, 'Apr ' + currentYear, 'Mei ' + currentYear, 'Jun ' + currentYear,
-            'Jul ' + currentYear, 'Agu ' + currentYear, 'Sep ' + currentYear, 'Okt ' + currentYear, 'Nov ' + currentYear, 'Des ' + currentYear,
-            'Jan ' + nextYear, 'Feb ' + nextYear, 'Mar ' + nextYear, 'Apr ' + nextYear, 'Mei ' + nextYear, 'Jun ' + nextYear,
-            'Jul ' + nextYear, 'Agu ' + nextYear, 'Sep ' + nextYear, 'Okt ' + nextYear, 'Nov ' + nextYear, 'Des ' + nextYear
+            'Januari ' + currentYear, 'Februari ' + currentYear, 'Maret ' + currentYear, 'April ' + currentYear, 'Mei ' + currentYear, 'Juni ' + currentYear,
+            'Juli ' + currentYear, 'Agustus ' + currentYear, 'September ' + currentYear, 'Oktober ' + currentYear, 'November ' + currentYear, 'Desember ' + currentYear,
+            'Januari ' + nextYear, 'Februari ' + nextYear, 'Maret ' + nextYear, 'April ' + nextYear, 'Mei ' + nextYear, 'Juni ' + nextYear,
+            'Juli ' + nextYear, 'Agustus ' + nextYear, 'September ' + nextYear, 'Oktober ' + nextYear, 'November ' + nextYear, 'Desember ' + nextYear
           ];
           historicalData = [2400, 2600, 2500, 2700, 2650, 2800, 2750, 2850, 2700, 2800, 2750, 2850, null, null, null, null, null, null, null, null, null, null, null, null];
           futureData = [null, null, null, null, null, null, null, null, null, null, null, null, 2530, 2785, 2930, 3008, 2974, 2963, 2962, 2965, 2965, 2965, 2965, 2965];
@@ -601,7 +658,14 @@
             prediction: parseFloat(pdfDataDiv.dataset.minPrediction) || 0
           },
           monthly_predictions: Array.isArray(monthlyPredictions) ? monthlyPredictions : [],
-          analysis: analysisData // Add analysis data to PDF
+          analysis: analysisData, // Add analysis data to PDF
+          model_metrics: {
+            MSE: parseFloat(pdfDataDiv.dataset.mse) || 0,
+            RMSE: parseFloat(pdfDataDiv.dataset.rmse) || 0,
+            MAE: parseFloat(pdfDataDiv.dataset.mae) || 0,
+            MAPE: parseFloat(pdfDataDiv.dataset.mape) || 0,
+            R2: parseFloat(pdfDataDiv.dataset.r2) || 0
+          }
         };
         
         console.log('Results data for PDF:', resultsData);
