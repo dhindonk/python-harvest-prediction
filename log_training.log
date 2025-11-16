@@ -1,0 +1,82 @@
+(venv_modern) PS C:\Users\Fahmi\Documents\Skripsi\Rivan\harvest-prediction> py train_model_v9.py
+================================================================================
+Versi TensorFlow (Lokal): 2.13.0
+Versi NumPy (Lokal): 1.24.3
+Mode: Melatih model portabel V10 (Lokal).
+================================================================================
+
+================================================================================
+STARTING ENHANCED TRAINING PIPELINE V10 (LOKAL)
+================================================================================
+
+[1/6] Loading and cleaning data...
+   ✓ Loaded 3949 rows
+
+[2/6] Creating datetime index...
+   ✓ Date range: 2020-01-21 00:00:00 to 2024-12-31 00:00:00
+
+[3/6] Aggregating to monthly data...
+   ✓ Created 60 monthly records
+
+[4/6] Performing STL decomposition...
+   ✓ STL decomposition completed (Seasonal=13)
+
+[5/6] Engineering features...
+   ✓ Created features, dropped 0 rows
+
+   [INFO] Data length: 60 months
+   [INFO] Adaptive sequence length: 12 months
+
+[6/6] Preparing sequences...
+   • Total features being used: 32
+   ✓ Input/Output: 12m / 12m
+   ✓ Train/Test sequences: 29 / 8
+
+[DATA SUMMARY]
+   Training/Validation/Test: 24 / 5 / 8
+
+[MODEL] Building Enhanced Multi-Output LSTM...
+2025-11-16 16:16:09.266645: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE SSE2 SSE3 SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+   ✓ Model built successfully. Parameters: 45,601
+
+[TRAINING] Starting training...
+Epoch 1/300
+6/6 [==============================] - 18s 812ms/step - loss: 0.4059 - mae: 0.5112 - val_loss: 0.1757 - val_mae: 0.1959 - lr: 0.0010
+Epoch 2/300
+.....
+6/6 [==============================] - 0s 46ms/step - loss: 0.0797 - mae: 0.1252 - val_loss: 0.0975 - val_mae: 0.2119 - lr: 3.1250e-05
+Epoch 259/300
+6/6 [==============================] - 0s 44ms/step - loss: 0.0806 - mae: 0.1294 - val_loss: 0.0976 - val_mae: 0.2119 - lr: 3.1250e-05
+Epoch 260/300
+5/6 [========================>.....] - ETA: 0s - loss: 0.0828 - mae: 0.1366Restoring model weights from the end of the best epoch: 200.
+6/6 [==============================] - 0s 55ms/step - loss: 0.0769 - mae: 0.1266 - val_loss: 0.0977 - val_mae: 0.2119 - lr: 3.1250e-05
+Epoch 260: early stopping
+   ✓ Training completed!
+
+[VISUALIZATION] Generating training curves...
+   ✓ Training loss curve saved to visualizations/training_loss_curve.png
+
+[EVALUATION] Generating predictions for visualization...
+   [DEBUG] Plotting 12 data points for visualization.
+   ✓ Prediction vs actual plot saved to visualizations/prediction_vs_actual.png
+
+[METRICS] Model Performance:
+   • Mean Squared Error (MSE): 6847597.3092
+   • Mean Absolute Error (MAE): 2197.5177
+   • Mean Absolute Percentage Error (MAPE): 0.2129
+   • R-squared (R²): -0.0076
+
+[SAVING MODEL WEIGHTS]
+   ✓ Model weights saved: models/harvest_lstm_enhanced_weights_20251116_162144.weights.h5
+
+[SAVING PROCESSOR PARAMETERS AS JSON]
+   ✓ Processor parameters (JSON) saved: models/harvest_processor_params_20251116_162144.json
+
+[SUMMARY]
+   Model weights saved: models/harvest_lstm_enhanced_weights_20251116_162144.weights.h5
+   Processor params saved: models/harvest_processor_params_20251116_162144.json
+
+================================================================================
+ENHANCED TRAINING V10 (LOKAL) COMPLETED SUCCESSFULLY
+================================================================================
