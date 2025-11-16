@@ -118,7 +118,7 @@ class EnhancedDataProcessor:
             else:
                 date_col = next((col for col in df.columns if 'tanggal' in col or 'date' in col), None)
                 if date_col:
-                     df['tanggal_dt'] = pd.to_datetime(df[date_col], errors='coerce')
+                    df['tanggal_dt'] = pd.to_datetime(df[date_col], errors='coerce')
                 else:
                     raise ValueError("Tidak ditemukan kolom 'tahun'/'bulan' atau 'tanggal'/'date'")
             df.dropna(subset=['tanggal_dt'], inplace=True)
@@ -402,6 +402,107 @@ def main(file_path='data_training.csv', forecast_months=12):
             X_train_final, y_train_final, X_val, y_val,
             epochs=300, batch_size=4, verbose=1
         )
+        
+        # Visualisasi Loss Curve Training & Validation
+        print("\n[VISUALIZATION] Generating training curves...")
+        try:
+            plt.figure(figsize=(12, 6))
+            plt.plot(history.history['loss'], label='Training Loss', color='blue', linewidth=2)
+            plt.plot(history.history['val_loss'], label='Validation Loss', color='red', linewidth=2, linestyle='--')
+            plt.title('Grafik Penurunan Loss Selama Pelatihan Model LSTM', fontsize=14, fontweight='bold')
+            plt.xlabel('Epochs', fontsize=12)
+            plt.ylabel('Loss (MSE)', fontsize=12)
+            plt.legend(fontsize=12)
+            plt.grid(True, alpha=0.3)
+            
+            # Save the plot
+            os.makedirs('visualizations', exist_ok=True)
+            plt.savefig('visualizations/training_loss_curve.png', dpi=300, bbox_inches='tight')
+            print("   ✓ Training loss curve saved to visualizations/training_loss_curve.png")
+            plt.show()
+        except Exception as e:
+            print(f"   ⚠ Failed to generate training loss curve: {e}")
+        
+        # Generate predictions for visualization
+        print("\n[EVALUATION] Generating predictions for visualization...")
+        try:
+            # y_pred_scaled memiliki shape (n_sequences, 12, 1)
+            y_pred_scaled = model_wrapper.predict(X_test)
+            
+            # 1. Data untuk Metrik (Dibuat flat)
+            # Reshape ke (n_sequences * 12, 1) untuk inverse_transform
+            y_pred_flat_scaled = y_pred_scaled.reshape(-1, 1)
+            y_test_flat_scaled = y_test.reshape(-1, 1)
+            
+            # Lakukan inverse transform pada data flat
+            y_pred_inv = processor.scaler_target.inverse_transform(y_pred_flat_scaled)
+            y_test_inv = processor.scaler_target.inverse_transform(y_test_flat_scaled)
+
+            # 2. Data untuk Plot (Ambil sequence pertama)
+            plot_actual_values = np.array([])
+            plot_pred_values = np.array([])
+            plot_dates = np.array([])
+            
+            if len(y_test) > 0:
+                # Ambil sequence pertama dari test set
+                plot_actual_scaled = y_test[0]  # Shape (12, 1)
+                plot_pred_scaled = y_pred_scaled[0] # Shape (12, 1)
+                
+                # Inverse transform HANYA sequence pertama
+                plot_actual_values = processor.scaler_target.inverse_transform(plot_actual_scaled)
+                plot_pred_values = processor.scaler_target.inverse_transform(plot_pred_scaled)
+
+                # Index awal dari data y_test[0] di df_featured
+                start_date_index = len(X_train) + sequence_length
+                end_date_index = start_date_index + forecast_months
+                
+                if end_date_index <= len(df_featured.index):
+                    plot_dates = df_featured.index[start_date_index:end_date_index]
+                else:
+                    plot_dates = pd.date_range(start=df_featured.index[start_date_index], periods=len(plot_actual_values), freq='MS')
+                
+                print(f"   [DEBUG] Plotting {len(plot_dates)} data points for visualization.")
+
+            # Visualisasi Prediksi vs Aktual
+            plt.figure(figsize=(18, 8))
+            
+            if len(plot_dates) > 0:
+                plt.plot(plot_dates, plot_actual_values, label='Data Aktual',
+                         color='blue', alpha=0.7, linewidth=3, marker='o', markersize=6)
+                plt.plot(plot_dates, plot_pred_values, label='Data Prediksi',
+                         color='red', linestyle='--', alpha=0.7, linewidth=3, marker='x', markersize=6)
+            else:
+                print("   ⚠ Tidak ada data tes untuk di-plot.")
+
+            plt.title('Perbandingan Hasil Panen Aktual vs. Prediksi Model LSTM', fontsize=14, fontweight='bold')
+            plt.xlabel('Tanggal', fontsize=12)
+            plt.ylabel('Hasil Panen (Kg)', fontsize=12)
+            plt.legend(fontsize=10)
+            plt.grid(True, alpha=0.3)
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            
+            # Save the plot
+            plt.savefig('visualizations/prediction_vs_actual.png', dpi=300, bbox_inches='tight')
+            print("   ✓ Prediction vs actual plot saved to visualizations/prediction_vs_actual.png")
+            plt.show()
+            
+            # Calculate and display metrics
+            mse = mean_squared_error(y_test_inv, y_pred_inv)
+            mae = mean_absolute_error(y_test_inv, y_pred_inv)
+            mape = mean_absolute_percentage_error(y_test_inv, y_pred_inv)
+            r2 = r2_score(y_test_inv, y_pred_inv)
+            
+            print(f"\n[METRICS] Model Performance:")
+            print(f"   • Mean Squared Error (MSE): {mse:.4f}")
+            print(f"   • Mean Absolute Error (MAE): {mae:.4f}")
+            print(f"   • Mean Absolute Percentage Error (MAPE): {mape:.4f}")
+            print(f"   • R-squared (R²): {r2:.4f}")
+            
+        except Exception as e:
+            print(f"   ⚠ Failed to generate prediction visualization: {e}")
+            import traceback
+            traceback.print_exc()
         
         weights_path, timestamp = model_wrapper.save_model_weights('harvest_lstm_enhanced')
         processor_path = save_processor_json(processor, sequence_length, timestamp)
