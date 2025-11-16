@@ -198,6 +198,104 @@ Setelah training selesai, sistem menyimpan:
 
 Penyimpanan terpisah ini memungkinkan model dijalankan di lingkungan yang berbeda tanpa harus melakukan training ulang.
 
+### 7. Visualisasi Hasil Training
+
+**Lokasi Kode:** [`train_model_v9.py`](train_model_v9.py:404-450)
+
+Sistem menghasilkan dua visualisasi penting untuk mengevaluasi kualitas model:
+
+```python
+# Visualisasi Loss Curve Training & Validation
+plt.figure(figsize=(12, 6))
+plt.plot(history.history['loss'], label='Training Loss', color='blue', linewidth=2)
+plt.plot(history.history['val_loss'], label='Validation Loss', color='red', linewidth=2, linestyle='--')
+plt.title('Grafik Penurunan Loss Selama Pelatihan Model LSTM', fontsize=14, fontweight='bold')
+plt.xlabel('Epochs', fontsize=12)
+plt.ylabel('Loss (MSE)', fontsize=12)
+plt.legend(fontsize=12)
+plt.grid(True, alpha=0.3)
+```
+
+**Penjelasan Rinci:**
+Grafik loss curve menunjukkan seberapa baik model belajar dari waktu ke waktu:
+- **Training Loss (biru)**: Kesalahan model pada data training
+- **Validation Loss (merah)**: Kesalahan model pada data validasi (data yang belum pernah dilihat)
+- **Ideal**: Kedua garis menurun dan konvergen (tidak terlalu jauh)
+
+```python
+# Visualisasi Prediksi vs Aktual
+plt.figure(figsize=(18, 8))
+
+# Data untuk Plot (Ambil sequence pertama)
+plot_actual_values = np.array([])
+plot_pred_values = np.array([])
+plot_dates = np.array([])
+
+if len(y_test) > 0:
+    # Ambil sequence pertama dari test set
+    plot_actual_scaled = y_test[0]  # Shape (12, 1)
+    plot_pred_scaled = y_pred_scaled[0] # Shape (12, 1)
+    
+    # Inverse transform HANYA sequence pertama
+    plot_actual_values = processor.scaler_target.inverse_transform(plot_actual_scaled)
+    plot_pred_values = processor.scaler_target.inverse_transform(plot_pred_scaled)
+
+    # Index awal dari data y_test[0] di df_featured
+    start_date_index = len(X_train) + sequence_length
+    end_date_index = start_date_index + forecast_months
+    
+    if end_date_index <= len(df_featured.index):
+        plot_dates = df_featured.index[start_date_index:end_date_index]
+    else:
+        plot_dates = pd.date_range(start=df_featured.index[start_date_index], periods=len(plot_actual_values), freq='MS')
+
+# Plot dengan data yang sudah diproses
+if len(plot_dates) > 0:
+    plt.plot(plot_dates, plot_actual_values, label='Data Aktual',
+             color='blue', alpha=0.7, linewidth=3, marker='o', markersize=6)
+    plt.plot(plot_dates, plot_pred_values, label='Data Prediksi',
+             color='red', linestyle='--', alpha=0.7, linewidth=3, marker='x', markersize=6)
+```
+
+**Penjelasan Rinci:**
+Grafik perbandingan aktual vs prediksi menunjukkan seberapa akurat model:
+- **Data Aktual (biru)**: Hasil panen asli dari data historis
+- **Data Prediksi (merah)**: Hasil prediksi yang dihasilkan model
+- **Evaluasi**: Semakin dekat kedua garis, semakin akurat model
+
+**Proses Pembuatan Grafik:**
+1. Sistem mengambil sequence pertama dari data test
+2. Melakukan inverse transform untuk mengembalikan data ke skala asli
+3. Menentukan tanggal yang sesuai untuk setiap data point
+4. Memplot data dengan garis yang menghubungkan setiap titik
+
+### 8. Metrik Evaluasi
+
+**Lokasi Kode:** [`train_model_v9.py`](train_model_v9.py:440-447)
+
+Sistem menghitung beberapa metrik untuk mengukur kinerja model:
+
+```python
+# Calculate and display metrics
+mse = mean_squared_error(y_test_inv, y_pred)
+mae = mean_absolute_error(y_test_inv, y_pred)
+mape = mean_absolute_percentage_error(y_test_inv, y_pred)
+r2 = r2_score(y_test_inv, y_pred)
+
+print(f"\n[METRICS] Model Performance:")
+print(f"   • Mean Squared Error (MSE): {mse:.4f}")
+print(f"   • Mean Absolute Error (MAE): {mae:.4f}")
+print(f"   • Mean Absolute Percentage Error (MAPE): {mape:.4f}")
+print(f"   • R-squared (R²): {r2:.4f}")
+```
+
+**Penjelasan Rinci:**
+Metrik-metrik ini membantu kita memahami seberapa baik model bekerja:
+- **MSE**: Rata-rata kesalahan kuadrat - semakin kecil semakin baik
+- **MAE**: Rata-rata kesalahan absolut - dalam satuan kg yang sama dengan data asli
+- **MAPE**: Rata-rata persentase kesalahan - dalam persen, mudah dipahami
+- **R²**: Koefisien determinasi - seberapa baik model menjelaskan variasi data (0-1, semakin dekat 1 semakin baik)
+
 ---
 
 ## Aplikasi Prediksi
@@ -361,7 +459,16 @@ python train_model_v9.py
 ```
 
 **Penjelasan Rinci:**
-Langkah ini bersifat opsional karena model yang sudah dilatih seharusnya sudah tersedia di folder `models`. Proses training mungkin memakan waktu beberapa menit hingga beberapa jam tergantung pada ukuran data dan spesifikasi komputer.
+Langkah ini bersifat opsional karena model yang sudah dilatih seharusnya sudah tersedia di folder `models`. Namun, jika Anda ingin melatih ulang model dengan data baru, Anda dapat menjalankan perintah di atas. Proses training mungkin memakan waktu beberapa menit hingga beberapa jam tergantung pada ukuran data dan spesifikasi komputer.
+
+Selama proses training, sistem akan:
+1. Memproses data melalui 6 tahap preprocessing
+2. Melatih model LSTM dengan arsitektur khusus
+3. Menghasilkan visualisasi otomatis:
+   - Grafik loss curve untuk memantau proses training
+   - Grafik perbandingan prediksi vs data aktual
+4. Menyimpan hasil visualisasi di folder `visualizations/`
+5. Menghitung dan menampilkan metrik kinerja model
 
 ### 5. Menjalankan Aplikasi
 
@@ -369,10 +476,29 @@ Langkah ini bersifat opsional karena model yang sudah dilatih seharusnya sudah t
 # Jalankan aplikasi web
 python app.py
 ```
+
+### 6. Troubleshooting
+
+**Masalah Umum dan Solusinya:**
+
+1. **Error: "No module named 'tensorflow'"**
+   - Solusi: Pastikan Anda telah mengaktifkan virtual environment dan menginstall semua dependencies
+
+2. **Error: "Tidak ada file model weights (.weights.h5)"**
+   - Solusi: Jalankan training model terlebih dahulu dengan `python train_model_v9.py`
+
+3. **Error: "Data tidak cukup" saat prediksi**
+   - Solusi: Pastikan data yang diunggah memiliki minimal 12 bulan data historis
+
+4. **Aplikasi tidak dapat diakses**
+   - Solusi: Pastikan tidak ada aplikasi lain yang menggunakan port 5000, atau coba dengan port lain
+
+5. **Grafik visualisasi hanya menampilkan titik tanpa garis**
+   - Solusi: Pastikan data di-flatten dengan benar sebelum plotting. Kode terbaru telah memperbaiki masalah ini dengan mengambil sequence pertama dan melakukan inverse transform secara terpisah untuk visualisasi.
+
 ---
 
 ## Struktur Project
-
 ```
 harvest-prediction/
 ├── app.py                          # Aplikasi Flask utama
@@ -382,6 +508,9 @@ harvest-prediction/
 ├── data/                          # Folder untuk data training
 ├── models/                        # Folder untuk model yang sudah dilatih
 ├── uploads/                       # Folder untuk file yang diunggah
+├── visualizations/                # Folder untuk grafik hasil training
+│   ├── training_loss_curve.png    # Grafik loss training vs validation
+│   └── prediction_vs_actual.png  # Grafik perbandingan prediksi vs aktual
 ├── static/                        # File statis (CSS, JS, gambar)
 │   └── js/
 │       └── pdf-generator.js       # Script untuk generate PDF
